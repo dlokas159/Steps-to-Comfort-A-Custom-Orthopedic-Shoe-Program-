@@ -35,6 +35,9 @@ class StepsToComfort {
         shoeStyles.put("Wide", "Sneakers, Boots");
         shoeStyles.put("Flat Arch", "Running Shoes, Orthopedic Shoes");
         shoeStyles.put("High Arch", "Cushioned Sneakers, Sandals");
+        shoeStyles.put("Bunions", "Wide-Fit Shoes with Soft Uppers");
+        shoeStyles.put("Blisters", "Breathable Sneakers with Cushioned Insoles");
+        shoeStyles.put("Hammer Toe", "Adjustable Sandals, Deep-Toe Box Shoes");
         
         List<String> recommendations = new ArrayList<>();
         for (String measurement : measurements) {
@@ -54,17 +57,19 @@ class StepsToComfort {
         Scanner scanner = new Scanner(System.in);
         FootMeasurements footMeasurements = new FootMeasurements();
         
-        System.out.println("Let's determine the best shoe for you! Please answer the following questions:");
+        System.out.println("Welcome to Steps to Comfort: A Custom Orthopedic Shoe Program!");
+        System.out.println("Please provide your foot details for a perfect fit.");
         
         System.out.println("Do you have narrow or wide feet? (Narrow/Wide)");
         footMeasurements.insert(scanner.nextLine());
         
-        System.out.println("Do you have a high arch or flat arch? (High Arch/Flat Arch/Normal)");
+        System.out.println("Do you have a high arch, flat arch, or normal arch? (High Arch/Flat Arch/Normal)");
         footMeasurements.insert(scanner.nextLine());
         
-        System.out.println("Do you experience foot pain or require extra support? (Yes/No)");
-        if (scanner.nextLine().equalsIgnoreCase("Yes")) {
-            footMeasurements.insert("Orthopedic");
+        System.out.println("Do you experience any of the following foot problems? (Bunions, Athlete's Foot, Blisters, Hammer Toe, None)");
+        String footIssue = scanner.nextLine();
+        if (!footIssue.equalsIgnoreCase("None")) {
+            footMeasurements.insert(footIssue);
         }
         
         System.out.println("Stored Foot Measurements: ");
@@ -89,6 +94,12 @@ class StepsToComfort {
         }
         
         System.out.println("Great choice! Your custom shoe order has been placed.");
+        
+        System.out.println("\nShoe Care Tips:");
+        System.out.println("- Keep your orthopedic shoes clean and dry.");
+        System.out.println("- Use a soft brush to remove dirt and debris.");
+        System.out.println("- Store shoes in a cool, dry place to maintain their shape.");
+        System.out.println("- Replace insoles regularly for optimal comfort.");
         
         scanner.close();
     }
