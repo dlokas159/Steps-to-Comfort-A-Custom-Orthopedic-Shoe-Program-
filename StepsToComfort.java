@@ -1,106 +1,167 @@
-import java.util.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
-class StepsToComfort {
-    // Stores foot measurements using an ArrayList
-    static class FootMeasurements {
-        private List<String> measurements;
+public class StepsToComfort extends JFrame {
 
-        public FootMeasurements() {
-            measurements = new ArrayList<>();
-        }
+    private JComboBox<String> widthBox, archBox, problemsBox, shoeTypeBox, materialBox;
+    private JTextField colorField;
+    private JButton submitButton;
+    private JLabel imageLabel;
 
-        // Inserts a new measurement into the list
-        public void insert(String data) {
-            measurements.add(data);
-        }
+    public StepsToComfort() {
+        setTitle("Steps To Comfort");
+        setSize(600, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new GridLayout(10, 2, 5, 5));
 
-        // Displays the contents of the list
-        public void display() {
-            for (String measurement : measurements) {
-                System.out.print(measurement + " -> ");
+        Font font = new Font("Arial", Font.PLAIN, 18);
+
+        // Foot Width
+        add(createLabel("Foot Width:", font));
+        widthBox = new JComboBox<>(new String[]{"Extra Narrow", "Narrow", "Medium", "Wide", "Extra Wide"});
+        widthBox.setFont(font);
+        add(widthBox);
+
+        // Arch Type
+        add(createLabel("Arch Type:", font));
+        archBox = new JComboBox<>(new String[]{"Flat", "Low", "Medium", "High"});
+        archBox.setFont(font);
+        add(archBox);
+
+        // Foot Problems
+        add(createLabel("Foot Problems:", font));
+        problemsBox = new JComboBox<>(new String[]{
+                "None", "Flat Feet", "Plantar Fasciitis", "High Arches", "Bunions", "Heel Spurs", "Overpronation"
+        });
+        problemsBox.setFont(font);
+        add(problemsBox);
+
+        // Shoe Type
+        add(createLabel("Preferred Shoe Type:", font));
+        shoeTypeBox = new JComboBox<>(new String[]{"Athletic", "Running", "Casual", "Dress", "Boots", "Sandals"});
+        shoeTypeBox.setFont(font);
+        add(shoeTypeBox);
+
+        // Material
+        add(createLabel("Preferred Material:", font));
+        materialBox = new JComboBox<>(new String[]{"Leather", "Canvas", "Mesh", "Suede", "Synthetic"});
+        materialBox.setFont(font);
+        add(materialBox);
+
+        // Color Preferences
+        add(createLabel("Color Preferences:", font));
+        colorField = new JTextField();
+        colorField.setFont(font);
+        add(colorField);
+
+        // Submit Button
+        submitButton = new JButton("Generate My Shoe!");
+        submitButton.setFont(font);
+        add(submitButton);
+
+        // Placeholder for Image
+        imageLabel = new JLabel("Your shoe will appear here", SwingConstants.CENTER);
+        imageLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        add(imageLabel);
+
+        // Action Listener
+        submitButton.addActionListener(e -> generateAndDisplayShoe());
+
+        setVisible(true);
+    }
+
+    private JLabel createLabel(String text, Font font) {
+        JLabel label = new JLabel(text);
+        label.setFont(font);
+        return label;
+    }
+
+    private void generateAndDisplayShoe() {
+        String width = (String) widthBox.getSelectedItem();
+        String arch = (String) archBox.getSelectedItem();
+        String problem = (String) problemsBox.getSelectedItem();
+        String shoeType = (String) shoeTypeBox.getSelectedItem();
+        String material = (String) materialBox.getSelectedItem();
+        String colors = colorField.getText().trim();
+
+        String prompt = String.format(
+                "Create a fashionable and supportive %s shoe made of %s for someone with %s width feet, %s arch, and issues like %s. Include colors like %s. Make it suitable for all-day comfort and style.",
+                shoeType.toLowerCase(), material.toLowerCase(), width.toLowerCase(), arch.toLowerCase(), problem.toLowerCase(), colors
+        );
+
+        try {
+            String imageUrl = generateImageFromPrompt(prompt);
+            if (imageUrl != null) {
+                showImage(imageUrl);
+                askIfSatisfied(prompt);
             }
-            System.out.println("None");
-        }
-
-        // Returns the list of foot measurements
-        public List<String> getMeasurements() {
-            return measurements;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error generating image.");
         }
     }
 
-    // Matches foot measurements to suitable shoe styles
-    public static List<String> getShoeRecommendations(List<String> measurements) {
-        Map<String, String> shoeStyles = new HashMap<>();
-        shoeStyles.put("Narrow", "Loafers, Oxfords");
-        shoeStyles.put("Wide", "Sneakers, Boots");
-        shoeStyles.put("Flat Arch", "Running Shoes, Orthopedic Shoes");
-        shoeStyles.put("High Arch", "Cushioned Sneakers, Sandals");
-        shoeStyles.put("Bunions", "Wide-Fit Shoes with Soft Uppers");
-        shoeStyles.put("Blisters", "Breathable Sneakers with Cushioned Insoles");
-        shoeStyles.put("Hammer Toe", "Adjustable Sandals, Deep-Toe Box Shoes");
-        
-        List<String> recommendations = new ArrayList<>();
-        for (String measurement : measurements) {
-            if (shoeStyles.containsKey(measurement)) {
-                recommendations.add(measurement + " - Recommended Styles: " + shoeStyles.get(measurement));
+    private void askIfSatisfied(String originalPrompt) {
+        int option = JOptionPane.showConfirmDialog(this, "Do you like this shoe?", "Satisfaction", JOptionPane.YES_NO_OPTION);
+        if (option == JOptionPane.NO_OPTION) {
+            try {
+                String newImage = generateImageFromPrompt(originalPrompt);
+                showImage(newImage);
+                askIfSatisfied(originalPrompt);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+        } else {
+            JOptionPane.showMessageDialog(this, "Awesome! Glad you like it!");
         }
-        return recommendations;
     }
 
-    // Simulates AI-generated shoe design
-    public static String generateShoeImage() {
-        return "[AI Generated Shoe Image]"; // Placeholder for actual AI image generation
+    private void showImage(String imageUrl) throws IOException {
+        ImageIcon icon = new ImageIcon(new URL(imageUrl));
+        Image scaledImage = icon.getImage().getScaledInstance(400, 400, Image.SCALE_SMOOTH);
+        imageLabel.setIcon(new ImageIcon(scaledImage));
+        imageLabel.setText("");
+        this.revalidate();
+    }
+
+    private String generateImageFromPrompt(String prompt) throws IOException {
+        String apiKey = "YOUR_OPENAI_API_KEY";
+        String endpoint = "https://api.openai.com/v1/images/generations";
+        String body = String.format("{\"prompt\":\"%s\",\"n\":1,\"size\":\"512x512\"}", prompt);
+
+        HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
+        conn.setDoOutput(true);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authorization", "Bearer " + apiKey);
+        conn.setRequestProperty("Content-Type", "application/json");
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(body.getBytes(StandardCharsets.UTF_8));
+        }
+
+        if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null) {
+                    response.append(line);
+                }
+                String json = response.toString();
+                int urlStart = json.indexOf("\"url\":\"") + 7;
+                int urlEnd = json.indexOf("\"", urlStart);
+                return json.substring(urlStart, urlEnd).replace("\\/", "/");
+            }
+        } else {
+            throw new IOException("Failed to generate image: HTTP " + conn.getResponseCode());
+        }
     }
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        FootMeasurements footMeasurements = new FootMeasurements();
-        
-        System.out.println("Welcome to Steps to Comfort: A Custom Orthopedic Shoe Program!");
-        System.out.println("Please provide your foot details for a perfect fit.");
-        
-        System.out.println("Do you have narrow or wide feet? (Narrow/Wide)");
-        footMeasurements.insert(scanner.nextLine());
-        
-        System.out.println("Do you have a high arch, flat arch, or normal arch? (High Arch/Flat Arch/Normal)");
-        footMeasurements.insert(scanner.nextLine());
-        
-        System.out.println("Do you experience any of the following foot problems? (Bunions, Athlete's Foot, Blisters, Hammer Toe, None)");
-        String footIssue = scanner.nextLine();
-        if (!footIssue.equalsIgnoreCase("None")) {
-            footMeasurements.insert(footIssue);
-        }
-        
-        System.out.println("Stored Foot Measurements: ");
-        footMeasurements.display();
-        
-        List<String> recommendations = getShoeRecommendations(footMeasurements.getMeasurements());
-        
-        System.out.println("\nShoe Recommendations:");
-        for (String recommendation : recommendations) {
-            System.out.println(recommendation);
-        }
-        
-        // AI Shoe Generation
-        String shoeImage = generateShoeImage();
-        System.out.println("\nGenerated Shoe Design: " + shoeImage);
-        
-        System.out.println("Do you like this shoe? (Yes/No)");
-        while (scanner.nextLine().equalsIgnoreCase("No")) {
-            shoeImage = generateShoeImage();
-            System.out.println("\nGenerated New Shoe Design: " + shoeImage);
-            System.out.println("Do you like this shoe? (Yes/No)");
-        }
-        
-        System.out.println("Great choice! Your custom shoe order has been placed.");
-        
-        System.out.println("\nShoe Care Tips:");
-        System.out.println("- Keep your orthopedic shoes clean and dry.");
-        System.out.println("- Use a soft brush to remove dirt and debris.");
-        System.out.println("- Store shoes in a cool, dry place to maintain their shape.");
-        System.out.println("- Replace insoles regularly for optimal comfort.");
-        
-        scanner.close();
+        SwingUtilities.invokeLater(StepsToComfort::new);
     }
 }
