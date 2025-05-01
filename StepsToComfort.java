@@ -5,19 +5,26 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 public class StepsToComfort extends JFrame {
 
     private JComboBox<String> widthBox, archBox, problemsBox, shoeTypeBox, materialBox;
     private JTextField colorField;
-    private JButton submitButton;
-    private JLabel imageLabel;
+    private JButton submitButton, previousButton;
+    private JLabel outputLabel;
+
+    private final HashMap<String, String> problemToSupportFeatureMap = new HashMap<>();
+    private final HashMap<String, String> shoeTypeDescriptions = new HashMap<>();
+    private final LinkedList<String> descriptionHistory = new LinkedList<>();
+    private int currentIndex = -1;
 
     public StepsToComfort() {
         setTitle("Steps To Comfort");
-        setSize(600, 600);
+        setSize(700, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridLayout(10, 2, 5, 5));
+        setLayout(new GridLayout(11, 2, 5, 5));
 
         Font font = new Font("Arial", Font.PLAIN, 18);
 
@@ -62,13 +69,24 @@ public class StepsToComfort extends JFrame {
         submitButton.setFont(font);
         add(submitButton);
 
-        // Placeholder for Image
-        imageLabel = new JLabel("Your shoe will appear here", SwingConstants.CENTER);
-        imageLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        add(imageLabel);
+        // Previous Button
+        previousButton = new JButton("Previous");
+        previousButton.setFont(font);
+        previousButton.setEnabled(false);
+        add(previousButton);
 
-        // Action Listener
+        // Output Label
+        outputLabel = new JLabel("<html><center>Your shoe description will appear here</center></html>", SwingConstants.CENTER);
+        outputLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        outputLabel.setVerticalAlignment(SwingConstants.TOP);
+        add(outputLabel);
+
+        // Button Actions
         submitButton.addActionListener(e -> generateAndDisplayShoe());
+        previousButton.addActionListener(e -> showPreviousDescription());
+
+        // Initialize Maps
+        initializeMaps();
 
         setVisible(true);
     }
@@ -79,6 +97,23 @@ public class StepsToComfort extends JFrame {
         return label;
     }
 
+    private void initializeMaps() {
+        problemToSupportFeatureMap.put("None", "general comfort and moderate support");
+        problemToSupportFeatureMap.put("Flat Feet", "arch support and motion control");
+        problemToSupportFeatureMap.put("Plantar Fasciitis", "deep heel cups and cushioned insoles");
+        problemToSupportFeatureMap.put("High Arches", "extra cushioning and arch flexibility");
+        problemToSupportFeatureMap.put("Bunions", "wide toe box and soft materials");
+        problemToSupportFeatureMap.put("Heel Spurs", "shock absorption and heel padding");
+        problemToSupportFeatureMap.put("Overpronation", "stability features and medial support");
+
+        shoeTypeDescriptions.put("Athletic", "suitable for gym workouts and active use");
+        shoeTypeDescriptions.put("Running", "built for impact protection and forward motion");
+        shoeTypeDescriptions.put("Casual", "great for everyday wear with a relaxed look");
+        shoeTypeDescriptions.put("Dress", "stylish and sleek for formal occasions");
+        shoeTypeDescriptions.put("Boots", "durable, supportive, and ideal for rougher terrain");
+        shoeTypeDescriptions.put("Sandals", "breathable and comfortable for warm weather");
+    }
+
     private void generateAndDisplayShoe() {
         String width = (String) widthBox.getSelectedItem();
         String arch = (String) archBox.getSelectedItem();
@@ -87,50 +122,50 @@ public class StepsToComfort extends JFrame {
         String material = (String) materialBox.getSelectedItem();
         String colors = colorField.getText().trim();
 
+        String supportFeature = problemToSupportFeatureMap.getOrDefault(problem, "general support");
+        String shoeDesc = shoeTypeDescriptions.getOrDefault(shoeType, "everyday wear");
+
         String prompt = String.format(
-                "Create a fashionable and supportive %s shoe made of %s for someone with %s width feet, %s arch, and issues like %s. Include colors like %s. Make it suitable for all-day comfort and style.",
-                shoeType.toLowerCase(), material.toLowerCase(), width.toLowerCase(), arch.toLowerCase(), problem.toLowerCase(), colors
+            "Design a fashionable and supportive %s shoe made of %s for someone with %s width feet, %s arch, and needing %s. " +
+            "It should be suitable for %s. Include colors like %s. Describe the shoe in detail, including comfort, style, and ideal usage.",
+            shoeType.toLowerCase(), material.toLowerCase(), width.toLowerCase(), arch.toLowerCase(),
+            supportFeature, shoeDesc, colors
         );
 
         try {
-            String imageUrl = generateImageFromPrompt(prompt);
-            if (imageUrl != null) {
-                showImage(imageUrl);
-                askIfSatisfied(prompt);
-            }
+            String description = generateTextDescriptionFromPrompt(prompt);
+            descriptionHistory.addFirst(description);
+            currentIndex = 0;
+            previousButton.setEnabled(descriptionHistory.size() > 1);
+            displayDescription(description);
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error generating image.");
+            JOptionPane.showMessageDialog(this, "Error generating shoe description.");
         }
     }
 
-    private void askIfSatisfied(String originalPrompt) {
-        int option = JOptionPane.showConfirmDialog(this, "Do you like this shoe?", "Satisfaction", JOptionPane.YES_NO_OPTION);
-        if (option == JOptionPane.NO_OPTION) {
-            try {
-                String newImage = generateImageFromPrompt(originalPrompt);
-                showImage(newImage);
-                askIfSatisfied(originalPrompt);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+    private void showPreviousDescription() {
+        if (currentIndex + 1 < descriptionHistory.size()) {
+            currentIndex++;
+            displayDescription(descriptionHistory.get(currentIndex));
         } else {
-            JOptionPane.showMessageDialog(this, "Awesome! Glad you like it!");
+            JOptionPane.showMessageDialog(this, "No more previous descriptions.");
         }
     }
 
-    private void showImage(String imageUrl) throws IOException {
-        ImageIcon icon = new ImageIcon(new URL(imageUrl));
-        Image scaledImage = icon.getImage().getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(scaledImage));
-        imageLabel.setText("");
-        this.revalidate();
+    private void displayDescription(String description) {
+        outputLabel.setText("<html><div style='padding:10px;'>" + description.replaceAll("\n", "<br>") + "</div></html>");
     }
 
-    private String generateImageFromPrompt(String prompt) throws IOException {
-        String apiKey = "YOUR_OPENAI_API_KEY";
-        String endpoint = "https://api.openai.com/v1/images/generations";
-        String body = String.format("{\"prompt\":\"%s\",\"n\":1,\"size\":\"512x512\"}", prompt);
+    private String generateTextDescriptionFromPrompt(String prompt) throws IOException {
+        String apiKey = "YOUR_OPENAI_API_KEY"; // Replace with your actual API key
+        String endpoint = "https://api.openai.com/v1/chat/completions";
+
+        String body = "{"
+                + "\"model\": \"gpt-3.5-turbo\","
+                + "\"messages\": [{\"role\": \"user\", \"content\": \"" + prompt.replace("\"", "\\\"") + "\"}],"
+                + "\"temperature\": 0.7"
+                + "}";
 
         HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
         conn.setDoOutput(true);
@@ -150,12 +185,18 @@ public class StepsToComfort extends JFrame {
                     response.append(line);
                 }
                 String json = response.toString();
-                int urlStart = json.indexOf("\"url\":\"") + 7;
-                int urlEnd = json.indexOf("\"", urlStart);
-                return json.substring(urlStart, urlEnd).replace("\\/", "/");
+                int contentIndex = json.indexOf("\"content\":\"");
+                if (contentIndex != -1) {
+                    int start = contentIndex + 11;
+                    int end = json.indexOf("\"", start);
+                    String raw = json.substring(start, end);
+                    return raw.replace("\\n", "\n").replace("\\\"", "\"");
+                } else {
+                    return "No description returned.";
+                }
             }
         } else {
-            throw new IOException("Failed to generate image: HTTP " + conn.getResponseCode());
+            throw new IOException("Failed to generate description: HTTP " + conn.getResponseCode());
         }
     }
 
