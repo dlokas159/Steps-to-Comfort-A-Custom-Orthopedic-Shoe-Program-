@@ -35,9 +35,7 @@ public class StepsToComfort extends JFrame {
 
         // Foot Problems
         add(createLabel("Foot Problems:", font));
-        problemsBox = new JComboBox<>(new String[]{
-                "None", "Flat Feet", "Plantar Fasciitis", "High Arches", "Bunions", "Heel Spurs", "Overpronation"
-        });
+        problemsBox = new JComboBox<>(new String[]{"None", "Flat Feet", "Plantar Fasciitis", "High Arches", "Bunions", "Heel Spurs", "Overpronation"});
         problemsBox.setFont(font);
         add(problemsBox);
 
